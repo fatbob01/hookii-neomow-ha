@@ -1,5 +1,5 @@
 blueprint:
-  name: Neomow X - Auto-heal failed docking (kissing dock + alarm 514/515/116)
+  name: Neomow X - Auto-heal failed docking (kissing dock + alarm 514/515/516)
   description: >
     Self-healing redock + alarm recovery for **Hookii Neomow X** mowers via
     the native [hookii-neomow-ha
@@ -14,7 +14,7 @@ blueprint:
     has two spring-loaded "finger" contacts that oxidise over time. Combined,
     this means the mower frequently fails its first dock attempt and either sits
     with `chargeCurrent` flapping around 0 A (kissing the dock but not drawing
-    power), or throws docking alarm `514` / `515` / `116`.
+    power), or throws docking alarm `514` / `515` / `516`.
 
 
     The earlier Neomow firmware had a built-in self-heal that re-docked
@@ -31,9 +31,10 @@ blueprint:
 
     - **Path A — explicit alarm:** when the **Problem** binary sensor goes `on`
     and stays on for 60 s, press the **Clear Exception** button (same as tapping
-    "OK to resolve" in the Hookii app). The Problem sensor trips on *any*
-    `NOTICE_ALARM` `errCode` from the cloud, including `514` (docking failed),
-    `515` (docking failed), and `116` (obstacle at charging station).
+    "OK to resolve" in the Hookii app). The Problem sensor trips on docking faults
+    from the cloud — `514` / `515` (docking failed) and `516` (not charging at
+    dock) — as well as motion-halt faults detected directly from `robotStatus` /
+    `runStatusList` in the STATUS stream.
 
     - **Path B — kissing dock:** when battery is below the configured threshold
     AND charge current has been flapping inside the [-1, 1] A band for 60 s
@@ -100,10 +101,11 @@ blueprint:
       name: Problem binary sensor
       description: >-
         The integration's Problem binary sensor (e.g.
-        `binary_sensor.neomow_problem`). Goes `on` whenever the Hookii
-        cloud sends a `NOTICE_ALARM` with any `errCode` — including `514`
-        / `515` (docking failed) and `116` (obstacle at charging station).
-        Automatically clears once the mower is charging or mowing again.
+        `binary_sensor.neomow_problem`). Goes `on` on docking faults
+        (`514` / `515` / `516`) from the cloud AND on motion-halt faults
+        detected directly from STATUS (`robotStatus==4` / `runStatusList`).
+        Docking faults persist until the mower charges or mows; motion-halt
+        faults clear as soon as the halt clears.
       selector:
         entity:
           domain:
